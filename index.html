@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="ca">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#101b2d" />
+  <title>Torneig de futbol</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#f3f5f8;--surface:#fff;--ink:#172235;--muted:#718096;--line:#e4e9f0;--navy:#101b2d;--green:#16845b;--green2:#e6f5ee;--red:#b42318;--amber:#a15c07;--shadow:0 8px 28px rgba(19,35,58,.07)}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:"DM Sans",system-ui,sans-serif}
+    button,input,select{font:inherit}button{cursor:pointer}.shell{max-width:1120px;margin:auto;padding:28px 22px 60px}
+    header{background:var(--navy);color:white;padding:22px max(22px,calc((100vw - 1076px)/2));display:flex;align-items:center;justify-content:space-between;gap:16px}
+    .brand{display:flex;align-items:center;gap:12px}.ball{width:42px;height:42px;border-radius:13px;background:#1d9a6a;display:grid;place-items:center;font-size:22px}
+    h1{font-size:20px;margin:0;font-weight:800}header p{margin:3px 0 0;color:#b8c4d4;font-size:12px}
+    .header-actions{display:flex;gap:9px;align-items:center}.btn{border:0;border-radius:10px;padding:10px 14px;font-weight:700;font-size:13px;background:#e9eef5;color:#243247}
+    .btn.primary{background:var(--green);color:white}.btn.dark{background:#26364e;color:white}.btn.ghost{background:transparent;color:inherit;border:1px solid #526078}.btn.danger{background:#fff0ef;color:var(--red)}
+    .btn:disabled{opacity:.45;cursor:not-allowed}.status{font-size:12px;color:#c6d1df}.hero{display:flex;justify-content:space-between;align-items:end;gap:20px;margin:26px 0 18px}.eyebrow{color:var(--green);font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.1em}
+    .hero h2{font-size:28px;margin:5px 0 4px;letter-spacing:-.04em}.sub{color:var(--muted);font-size:13px}
+    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0}.stat{background:var(--surface);border:1px solid var(--line);border-radius:15px;padding:17px;box-shadow:var(--shadow)}.stat strong{font-size:27px;display:block}.stat span{font-size:12px;color:var(--muted)}
+    .tabs{display:flex;gap:7px;flex-wrap:wrap;margin:20px 0}.tab{border:1px solid var(--line);background:white;color:#536176;border-radius:10px;padding:10px 14px;font-weight:700;font-size:13px}.tab.active{background:var(--navy);border-color:var(--navy);color:white}
+    .panel{background:white;border:1px solid var(--line);border-radius:17px;padding:20px;box-shadow:var(--shadow);margin-bottom:15px}.panel h3{margin:0 0 5px;font-size:17px}.panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}.muted{color:var(--muted);font-size:12px}
+    .group-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}.group-title{font-weight:800;font-size:15px;margin-bottom:12px;display:flex;justify-content:space-between}
+    table{width:100%;border-collapse:collapse;font-size:12px}th{text-align:left;color:#8190a3;font-weight:700;padding:9px 7px;border-bottom:1px solid var(--line);white-space:nowrap}td{padding:11px 7px;border-bottom:1px solid #eef1f5}tr:last-child td{border-bottom:0}.num{text-align:right;font-variant-numeric:tabular-nums}.rank{color:#8793a3;width:22px}.teamname{font-weight:700}.points{font-weight:800;color:var(--green)}
+    .match-list{display:grid;gap:9px}.match{border:1px solid var(--line);border-radius:13px;padding:13px 14px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px}.team{font-weight:700;font-size:13px}.team.right{text-align:right}.score{display:flex;align-items:center;gap:7px}.score input{width:48px;text-align:center;border:1px solid var(--line);border-radius:8px;padding:8px 4px;font-weight:800}.score b{color:#9aa5b3}.score-view{font-weight:800;font-size:17px;min-width:48px;text-align:center}.match-meta{grid-column:1/-1;display:flex;justify-content:space-between;color:var(--muted);font-size:11px;margin-top:1px}
+    .toolbar{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.field{border:1px solid var(--line);border-radius:9px;padding:10px 11px;background:white;color:var(--ink);min-width:0}.field.full{width:100%}.field-label{font-size:12px;font-weight:700;color:#536176;display:block;margin:0 0 6px}
+    .form-row{display:grid;grid-template-columns:1fr 130px auto;gap:9px;align-items:end}.team-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.chip{background:#f0f4f8;border-radius:9px;padding:8px 10px;font-size:12px;font-weight:700}
+    .notice{padding:12px 14px;border-radius:10px;background:#edf7f2;color:#176445;font-size:12px;margin:12px 0}.error{background:#fff0ef;color:var(--red)}.empty{padding:28px;text-align:center;color:var(--muted);font-size:13px}
+    .loginbox{max-width:390px;margin:70px auto}.loginbox .field{width:100%;margin-bottom:12px}.hidden{display:none!important}.admin-only{display:none}.is-admin .admin-only{display:inline-flex}.is-admin .admin-block{display:block}.admin-block{display:none}
+    .footer{text-align:center;color:#99a4b3;font-size:11px;padding:18px}.pill{display:inline-block;border-radius:20px;padding:4px 8px;background:#e9f5ef;color:#16845b;font-size:10px;font-weight:800}
+    @media(max-width:650px){header{padding:16px 18px}.shell{padding:18px 13px 45px}.hero{align-items:start;flex-direction:column}.hero h2{font-size:24px}.stats{gap:8px}.stat{padding:13px}.stat strong{font-size:23px}.panel{padding:15px}.match{gap:5px;padding:11px 9px}.team{font-size:11px}.score input{width:38px;padding:7px 2px}.form-row{grid-template-columns:1fr 100px}.form-row button{grid-column:1/-1}.header-actions .status{display:none}}
+  </style>
+</head>
+<body>
+<header>
+  <div class="brand"><div class="ball">⚽</div><div><h1 id="headerName">Torneig de futbol</h1><p>Resultats · classificació · estadístiques</p></div></div>
+  <div class="header-actions"><span class="status" id="accessStatus">Consulta pública</span><button class="btn dark" id="loginBtn">Accés organització</button><button class="btn ghost hidden" id="logoutBtn">Tancar sessió</button></div>
+</header>
+<main class="shell">
+  <section class="hero"><div><div class="eyebrow">Panell del torneig</div><h2 id="pageTitle">Segueix la competició</h2><div class="sub" id="pageSubtitle">Consulta els grups, els partits i la classificació actualitzada.</div></div><div class="toolbar admin-only"><button class="btn primary" id="editNameBtn">Editar torneig</button></div></section>
+  <section class="stats"><div class="stat"><strong id="teamCount">—</strong><span>Equips</span></div><div class="stat"><strong id="playedCount">—</strong><span>Partits jugats</span></div><div class="stat"><strong id="pendingCount">—</strong><span>Partits pendents</span></div></section>
+  <nav class="tabs"><button class="tab active" data-tab="table">Classificació</button><button class="tab" data-tab="matches">Partits i resultats</button><button class="tab" data-tab="stats">Estadístiques</button><button class="tab admin-only" data-tab="manage">Gestionar equips</button></nav>
+  <section id="content"></section>
+  <div class="footer">Aplicació de gestió de torneigs · Les dades es desen al núvol</div>
+</main>
+
+<div class="loginbox panel hidden" id="loginPanel">
+  <h3>Accés de l'organització</h3><p class="muted">Inicia la sessió amb el teu compte d'administració.</p>
+  <form id="loginForm"><label class="field-label">Correu electrònic</label><input class="field" type="email" id="email" required autocomplete="username"><label class="field-label">Contrasenya</label><input class="field" type="password" id="password" required autocomplete="current-password"><button class="btn primary" style="width:100%" type="submit">Iniciar sessió</button></form>
+  <div id="loginMessage" class="notice hidden"></div><button class="btn" id="cancelLogin" style="margin-top:10px;width:100%">Tornar al torneig</button>
+</div>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+  // Introdueix aquí les dades del projecte Supabase (vegeu README.md).
+  const SUPABASE_URL = 'https://scdybtxmmlbzkodrozyh.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_GHBhaiKeqU2CKxIBQxE3LQ_HeyFDm8i';
+  const configured = !SUPABASE_URL.startsWith('YOUR_') && !SUPABASE_ANON_KEY.startsWith('YOUR_');
+  const supabase = configured ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+  let isAdmin = false, currentTab = 'table', teams = [], matches = [], tournament = null;
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const msg = (text, error=false) => `<div class="notice ${error?'error':''}">${esc(text)}</div>`;
+  const groupNames = () => [...new Set(teams.map(t=>t.group_name))].sort();
+  const teamName = id => teams.find(t=>t.id===id)?.name || 'Equip desconegut';
+
+  async function loadData(){
+    if(!configured){ renderSetupWarning(); return; }
+    const [{data:tournamentRows,error:e1},{data:teamRows,error:e2},{data:matchRows,error:e3}] = await Promise.all([
+      supabase.from('tournaments').select('*').order('created_at').limit(1),
+      supabase.from('teams').select('*').order('group_name').order('name'),
+      supabase.from('matches').select('*').order('group_name').order('round_number').order('match_number')
+    ]);
+    if(e1||e2||e3){ $('content').innerHTML=msg((e1||e2||e3).message,true);return; }
+    tournament=tournamentRows?.[0]||null;teams=teamRows||[];matches=matchRows||[];
+    $('headerName').textContent=tournament?.name||'Torneig de futbol';
+    $('pageTitle').textContent=tournament?.name||'Segueix la competició';
+    $('teamCount').textContent=teams.length;
+    $('playedCount').textContent=matches.filter(m=>m.home_score!==null&&m.away_score!==null).length;
+    $('pendingCount').textContent=matches.filter(m=>m.home_score===null||m.away_score===null).length;
+    render();
+  }
+  function renderSetupWarning(){
+    $('content').innerHTML=msg('L’aplicació està preparada, però encara cal connectar-la a Supabase. Segueix les instruccions del README.md.',true);
+    $('teamCount').textContent='0';$('playedCount').textContent='0';$('pendingCount').textContent='0';
+  }
+  function standings(group){
+    const rows=teams.filter(t=>t.group_name===group).map(t=>({id:t.id,name:t.name,pj:0,g:0,e:0,p:0,gf:0,gc:0,pts:0}));
+    matches.filter(m=>m.group_name===group&&m.home_score!==null&&m.away_score!==null).forEach(m=>{
+      const h=rows.find(r=>r.id===m.home_team_id),a=rows.find(r=>r.id===m.away_team_id);if(!h||!a)return;
+      h.pj++;a.pj++;h.gf+=m.home_score;h.gc+=m.away_score;a.gf+=m.away_score;a.gc+=m.home_score;
+      if(m.home_score>m.away_score){h.g++;h.pts+=3;a.p++}else if(m.home_score<m.away_score){a.g++;a.pts+=3;h.p++}else{h.e++;a.e++;h.pts++;a.pts++}
+    });
+    rows.forEach(r=>r.dg=r.gf-r.gc);
+    return rows.sort((a,b)=>b.pts-a.pts||b.dg-a.dg||b.gf-a.gf||a.name.localeCompare(b.name,'ca'));
+  }
+  function renderTable(){
+    if(!teams.length)return `<div class="panel empty">Encara no hi ha equips inscrits.${isAdmin?' Ves a “Gestionar equips” per crear el torneig.':''}</div>`;
+    return `<div class="group-grid">${groupNames().map(g=>`<div class="panel"><div class="group-title"><span>${esc(g)}</span><span class="muted">${teams.filter(t=>t.group_name===g).length} equips</span></div><table><thead><tr><th>#</th><th>Equip</th><th class="num">PJ</th><th class="num">DG</th><th class="num">Pts</th></tr></thead><tbody>${standings(g).map((r,i)=>`<tr><td class="rank">${i+1}</td><td class="teamname">${esc(r.name)}</td><td class="num">${r.pj}</td><td class="num">${r.dg>0?'+':''}${r.dg}</td><td class="num points">${r.pts}</td></tr>`).join('')}</tbody></table></div>`).join('')}</div><div class="muted">Desempat: punts, diferència de gols i gols a favor.</div>`;
+  }
+  function renderMatches(){
+    if(!matches.length)return `<div class="panel empty">Encara no s'ha generat cap partit.</div>`;
+    return `<div class="panel"><div class="panel-head"><div><h3>Calendari i resultats</h3><div class="muted">Els resultats només els pot modificar l'organització.</div></div><select class="field" id="matchFilter"><option value="">Tots els grups</option>${groupNames().map(g=>`<option>${esc(g)}</option>`).join('')}</select></div><div id="matchList" class="match-list">${matches.map(m=>matchHtml(m)).join('')}</div></div>`;
+  }
+  function matchHtml(m){
+    const done=m.home_score!==null&&m.away_score!==null;
+    return `<div class="match" data-group="${esc(m.group_name)}"><div class="team">${esc(teamName(m.home_team_id))}</div><div class="score">${isAdmin?`<input type="number" min="0" step="1" aria-label="Gols ${esc(teamName(m.home_team_id))}" data-score="${m.id}" data-side="home" value="${m.home_score??''}" placeholder="–"><b>–</b><input type="number" min="0" step="1" aria-label="Gols ${esc(teamName(m.away_team_id))}" data-score="${m.id}" data-side="away" value="${m.away_score??''}" placeholder="–">`:`<div class="score-view">${done?m.home_score+' – '+m.away_score:'– : –'}</div>`}</div><div class="team right">${esc(teamName(m.away_team_id))}</div><div class="match-meta"><span>${esc(m.group_name)} · Jornada ${m.round_number}</span><span>${done?'Resultat introduït':'Pendent'} ${isAdmin&&done?'· editable':''}</span></div></div>`;
+  }
+  function renderStats(){
+    if(!teams.length)return `<div class="panel empty">Les estadístiques apareixeran quan hi hagi equips.</div>`;
+    return `<div class="group-grid">${groupNames().map(g=>`<div class="panel"><h3>${esc(g)}</h3><table><thead><tr><th>Equip</th><th class="num">PJ</th><th class="num">V-E-D</th><th class="num">GF</th><th class="num">GC</th><th class="num">DG</th><th class="num">Pts</th></tr></thead><tbody>${standings(g).map(r=>`<tr><td class="teamname">${esc(r.name)}</td><td class="num">${r.pj}</td><td class="num">${r.g}-${r.e}-${r.p}</td><td class="num">${r.gf}</td><td class="num">${r.gc}</td><td class="num">${r.dg}</td><td class="num points">${r.pts}</td></tr>`).join('')}</tbody></table></div>`).join('')}</div>`;
+  }
+  function renderManage(){
+    return `<div class="panel"><div class="panel-head"><div><h3>Configuració del torneig</h3><div class="muted">Nom, equips i distribució en grups.</div></div></div><label class="field-label">Nom del torneig</label><div class="toolbar"><input class="field" id="tournamentName" style="flex:1" value="${esc(tournament?.name||'Torneig de futbol')}"><button class="btn primary" id="saveTournament">Desar nom</button></div></div>
+    <div class="panel"><h3>Crear o substituir la fase de grups</h3><p class="muted">Aquesta acció elimina els equips, partits i resultats actuals. Distribueix els equips de manera equilibrada entre els grups.</p><label class="field-label">Equips (un per línia)</label><textarea class="field full" id="teamNames" rows="8" placeholder="Equip 1&#10;Equip 2&#10;Equip 3">${teams.map(t=>t.name).join('\n')}</textarea><div style="height:12px"></div><div class="toolbar"><div><label class="field-label">Nombre de grups</label><select class="field" id="groupCount">${[1,2,3,4,5,6,7,8].map(n=>`<option value="${n}" ${groupNames().length===n?'selected':''}>${n}</option>`).join('')}</select></div><button class="btn primary" id="generate">Generar equips i calendari</button></div><div id="manageMessage"></div></div>`;
+  }
+  function render(){
+    document.body.classList.toggle('is-admin',isAdmin);
+    $('loginBtn').classList.toggle('hidden',isAdmin);$('logoutBtn').classList.toggle('hidden',!isAdmin);
+    $('accessStatus').textContent=isAdmin?'Sessió d’administració':'Consulta pública';
+    document.querySelectorAll('.admin-only').forEach(el=>el.style.display=isAdmin?'inline-flex':'none');
+    document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===currentTab));
+    $('content').innerHTML=currentTab==='table'?renderTable():currentTab==='matches'?renderMatches():currentTab==='stats'?renderStats():renderManage();
+    if(currentTab==='matches')wireMatchControls();
+    if(currentTab==='manage')wireManageControls();
+  }
+  function wireMatchControls(){
+    $('matchFilter')?.addEventListener('change',e=>{document.querySelectorAll('.match').forEach(el=>el.classList.toggle('hidden',!!e.target.value&&el.dataset.group!==e.target.value))});
+    document.querySelectorAll('[data-score]').forEach(input=>input.addEventListener('change',async e=>{
+      const el=e.target, id=el.dataset.score, side=el.dataset.side, value=el.value.trim()===''?null:Number(el.value);
+      if(value!==null&&(!Number.isInteger(value)||value<0)){alert('Introdueix un nombre enter igual o superior a zero.');await loadData();return}
+      const other=matches.find(m=>m.id===id);
+      const payload={home_score:side==='home'?value:other.home_score,away_score:side==='away'?value:other.away_score};
+      const {error}=await supabase.from('matches').update(payload).eq('id',id);
+      if(error)alert(error.message);else await loadData();
+    }));
+  }
+  function wireManageControls(){
+    $('saveTournament')?.addEventListener('click',async()=>{
+      const name=$('tournamentName').value.trim();if(!name)return;
+      let result;
+      if(tournament)result=await supabase.from('tournaments').update({name}).eq('id',tournament.id);
+      else result=await supabase.from('tournaments').insert({name});
+      if(result.error)alert(result.error.message);else await loadData();
+    });
+    $('generate')?.addEventListener('click',async()=>{
+      const names=$('teamNames').value.split(/\n|,|;/).map(s=>s.trim()).filter(Boolean);
+      const n=Number($('groupCount').value), box=$('manageMessage');
+      if(names.length<2){box.innerHTML=msg('Cal introduir almenys dos equips.',true);return}
+      if(new Set(names.map(x=>x.toLocaleLowerCase())).size!==names.length){box.innerHTML=msg('No hi pot haver noms d’equip duplicats.',true);return}
+      if(!confirm('Això substituirà tots els equips, partits i resultats actuals. Vols continuar?'))return;
+      box.innerHTML=msg('Generant el calendari…');
+      const oldTeam=await supabase.from('teams').delete().neq('id','00000000-0000-0000-0000-000000000000');
+      if(oldTeam.error){box.innerHTML=msg(oldTeam.error.message,true);return}
+      const rows=names.map((name,i)=>({name,group_name:'Grup '+String.fromCharCode(65+(i%n))}));
+      const inserted=await supabase.from('teams').insert(rows).select();
+      if(inserted.error){box.innerHTML=msg(inserted.error.message,true);return}
+      const byGroup={};inserted.data.forEach(t=>(byGroup[t.group_name]??=[]).push(t));
+      const fixtures=[];
+      Object.entries(byGroup).forEach(([group,list])=>{
+        let round=1, matchNo=1;
+        // Circle-method round robin; supports odd and even team counts.
+        let rotation=list.map(t=>t.id);if(rotation.length%2)rotation.push(null);
+        const total=rotation.length;
+        for(let r=0;r<total-1;r++){
+          for(let j=0;j<total/2;j++){
+            const a=rotation[j],b=rotation[total-1-j];
+            if(a&&b)fixtures.push({group_name:group,home_team_id:r%2?b:a,away_team_id:r%2?a:b,round_number:round,match_number:matchNo++});
+          }
+          rotation=[rotation[0],rotation[total-1],...rotation.slice(1,total-1)];round++;
+        }
+      });
+      const made=await supabase.from('matches').insert(fixtures);
+      if(made.error){box.innerHTML=msg(made.error.message,true);return}
+      currentTab='table';await loadData();
+    });
+  }
+  document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{currentTab=b.dataset.tab;render()}));
+  $('loginBtn').addEventListener('click',()=>{$('loginPanel').classList.remove('hidden');document.querySelector('main').classList.add('hidden')});
+  $('cancelLogin').addEventListener('click',()=>{$('loginPanel').classList.add('hidden');document.querySelector('main').classList.remove('hidden')});
+  $('logoutBtn').addEventListener('click',async()=>{await supabase.auth.signOut();});
+  $('loginForm').addEventListener('submit',async e=>{e.preventDefault();if(!supabase)return;const {error}=await supabase.auth.signInWithPassword({email:$('email').value,password:$('password').value});$('loginMessage').classList.remove('hidden');$('loginMessage').textContent=error?error.message:'Sessió iniciada.'});
+  if(configured){
+    supabase.auth.onAuthStateChange((_event,session)=>{
+      isAdmin=!!session?.user;
+      if(isAdmin){$('loginPanel').classList.add('hidden');document.querySelector('main').classList.remove('hidden');}
+      render();
+    });
+    const {data:{session}}=await supabase.auth.getSession();isAdmin=!!session?.user;
+    if(isAdmin){$('loginPanel').classList.add('hidden');document.querySelector('main').classList.remove('hidden');}
+    await loadData();
+    // Realtime refresh so public viewers see changes made by an administrator.
+    supabase.channel('tournament-live').on('postgres_changes',{event:'*',schema:'public',table:'matches'},()=>loadData()).on('postgres_changes',{event:'*',schema:'public',table:'teams'},()=>loadData()).on('postgres_changes',{event:'*',schema:'public',table:'tournaments'},()=>loadData()).subscribe();
+  } else renderSetupWarning();
+</script>
+</body>
+</html>

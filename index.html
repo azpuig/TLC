@@ -181,6 +181,7 @@
   }
   document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{currentTab=b.dataset.tab;render()}));
   $('loginBtn').addEventListener('click',()=>{$('loginPanel').classList.remove('hidden');document.querySelector('main').classList.add('hidden')});
+  $('editNameBtn').addEventListener('click',()=>{currentTab='manage';render()});
   $('cancelLogin').addEventListener('click',()=>{$('loginPanel').classList.add('hidden');document.querySelector('main').classList.remove('hidden')});
   $('logoutBtn').addEventListener('click',async()=>{await supabase.auth.signOut();});
   $('loginForm').addEventListener('submit',async e=>{e.preventDefault();if(!supabase)return;const {error}=await supabase.auth.signInWithPassword({email:$('email').value,password:$('password').value});$('loginMessage').classList.remove('hidden');$('loginMessage').textContent=error?error.message:'Sessió iniciada.'});

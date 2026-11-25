@@ -30,6 +30,7 @@
     .notice{padding:12px 14px;border-radius:10px;background:#edf7f2;color:#176445;font-size:12px;margin:12px 0}.error{background:#fff0ef;color:var(--red)}.empty{padding:28px;text-align:center;color:var(--muted);font-size:13px}
     .loginbox{max-width:390px;margin:70px auto}.loginbox .field{width:100%;margin-bottom:12px}.hidden{display:none!important}.admin-only{display:none}.is-admin .admin-only{display:inline-flex}.is-admin .admin-block{display:block}.admin-block{display:none}
     .footer{text-align:center;color:#99a4b3;font-size:11px;padding:18px}.pill{display:inline-block;border-radius:20px;padding:4px 8px;background:#e9f5ef;color:#16845b;font-size:10px;font-weight:800}
+    .settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:13px}.pitch-block{margin-top:18px}.pitch-block h3{margin-bottom:10px}
     @media(max-width:650px){header{padding:16px 18px}.shell{padding:18px 13px 45px}.hero{align-items:start;flex-direction:column}.hero h2{font-size:24px}.stats{gap:8px}.stat{padding:13px}.stat strong{font-size:23px}.panel{padding:15px}.match{gap:5px;padding:11px 9px}.team{font-size:11px}.score input{width:38px;padding:7px 2px}.form-row{grid-template-columns:1fr 100px}.form-row button{grid-column:1/-1}.header-actions .status{display:none}}
   </style>
 </head>
@@ -41,7 +42,7 @@
 <main class="shell">
   <section class="hero"><div><div class="eyebrow">Panell del torneig</div><h2 id="pageTitle">Segueix la competició</h2><div class="sub" id="pageSubtitle">Consulta els grups, els partits i la classificació actualitzada.</div></div><div class="toolbar admin-only"><button class="btn primary" id="editNameBtn">Editar torneig</button></div></section>
   <section class="stats"><div class="stat"><strong id="teamCount">—</strong><span>Equips</span></div><div class="stat"><strong id="playedCount">—</strong><span>Partits jugats</span></div><div class="stat"><strong id="pendingCount">—</strong><span>Partits pendents</span></div></section>
-  <nav class="tabs"><button class="tab active" data-tab="table">Classificació</button><button class="tab" data-tab="matches">Partits i resultats</button><button class="tab" data-tab="stats">Estadístiques</button><button class="tab admin-only" data-tab="manage">Gestionar equips</button></nav>
+  <nav class="tabs"><button class="tab active" data-tab="table">Classificació</button><button class="tab" data-tab="matches">Partits i resultats</button><button class="tab" data-tab="stats">Estadístiques</button><button class="tab" data-tab="calendar">Calendari</button><button class="tab" data-tab="knockout">Eliminatòria</button><button class="tab admin-only" data-tab="manage">Administració</button></nav>
   <section id="content"></section>
   <div class="footer">Aplicació de gestió de torneigs · Les dades es desen al núvol</div>
 </main>
@@ -73,7 +74,7 @@
     const [{data:tournamentRows,error:e1},{data:teamRows,error:e2},{data:matchRows,error:e3}] = await Promise.all([
       supabase.from('tournaments').select('*').order('created_at').limit(1),
       supabase.from('teams').select('*').order('group_name').order('name'),
-      supabase.from('matches').select('*').order('group_name').order('round_number').order('match_number')
+      supabase.from('matches').select('*').order('phase').order('round_number').order('match_number')
     ]);
     if(e1||e2||e3){ $('content').innerHTML=msg((e1||e2||e3).message,true);return; }
     tournament=tournamentRows?.[0]||null;teams=teamRows||[];matches=matchRows||[];
@@ -104,19 +105,46 @@
   }
   function renderMatches(){
     if(!matches.length)return `<div class="panel empty">Encara no s'ha generat cap partit.</div>`;
-    return `<div class="panel"><div class="panel-head"><div><h3>Calendari i resultats</h3><div class="muted">Els resultats només els pot modificar l'organització.</div></div><select class="field" id="matchFilter"><option value="">Tots els grups</option>${groupNames().map(g=>`<option>${esc(g)}</option>`).join('')}</select></div><div id="matchList" class="match-list">${matches.map(m=>matchHtml(m)).join('')}</div></div>`;
+    const list=matches.filter(m=>m.phase!=='eliminatoria');
+    return `<div class="panel"><div class="panel-head"><div><h3>Fase de grups</h3><div class="muted">Els resultats només els pot modificar l'organització.</div></div><select class="field" id="matchFilter"><option value="">Tots els grups</option>${groupNames().map(g=>`<option>${esc(g)}</option>`).join('')}</select></div><div id="matchList" class="match-list">${list.map(m=>matchHtml(m)).join('')||'<div class="empty">No hi ha partits de grups.</div>'}</div></div>`;
   }
   function matchHtml(m){
     const done=m.home_score!==null&&m.away_score!==null;
-    return `<div class="match" data-group="${esc(m.group_name)}"><div class="team">${esc(teamName(m.home_team_id))}</div><div class="score">${isAdmin?`<input type="number" min="0" step="1" aria-label="Gols ${esc(teamName(m.home_team_id))}" data-score="${m.id}" data-side="home" value="${m.home_score??''}" placeholder="–"><b>–</b><input type="number" min="0" step="1" aria-label="Gols ${esc(teamName(m.away_team_id))}" data-score="${m.id}" data-side="away" value="${m.away_score??''}" placeholder="–">`:`<div class="score-view">${done?m.home_score+' – '+m.away_score:'– : –'}</div>`}</div><div class="team right">${esc(teamName(m.away_team_id))}</div><div class="match-meta"><span>${esc(m.group_name)} · Jornada ${m.round_number}</span><span>${done?'Resultat introduït':'Pendent'} ${isAdmin&&done?'· editable':''}</span></div></div>`;
+    const label=m.phase==='eliminatoria'?(m.round_label||'Fase eliminatòria'):`${esc(m.group_name)} · Jornada ${m.round_number}`;
+    const when=m.scheduled_at?new Date(m.scheduled_at).toLocaleString('ca-ES',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'Horari pendent';
+    const pitch=m.pitch_number?`Camp ${m.pitch_number}`:'Camp pendent';
+    return `<div class="match" data-group="${esc(m.group_name)}"><div class="team">${esc(teamName(m.home_team_id))}</div><div class="score">${isAdmin?`<input type="number" min="0" step="1" aria-label="Gols ${esc(teamName(m.home_team_id))}" data-score="${m.id}" data-side="home" value="${m.home_score??''}" placeholder="–"><b>–</b><input type="number" min="0" step="1" aria-label="Gols ${esc(teamName(m.away_team_id))}" data-score="${m.id}" data-side="away" value="${m.away_score??''}" placeholder="–">`:`<div class="score-view">${done?m.home_score+' – '+m.away_score:'– : –'}</div>`}</div><div class="team right">${esc(teamName(m.away_team_id))}</div><div class="match-meta"><span>${label} · ${when} · ${pitch}</span><span>${done?'Resultat introduït':'Pendent'}</span></div></div>`;
+  }
+  function renderCalendar(){
+    if(!matches.length)return `<div class="panel empty">Encara no hi ha partits per programar.</div>`;
+    const scheduled=matches.filter(m=>m.scheduled_at).sort((a,b)=>new Date(a.scheduled_at)-new Date(b.scheduled_at)||a.pitch_number-b.pitch_number);
+    const unscheduled=matches.filter(m=>!m.scheduled_at);
+    const pitches=Number(tournament?.pitch_count||3);
+    return `<div class="panel"><div class="panel-head"><div><h3>Horaris dels camps</h3><div class="muted">${tournament?.start_date?new Date(tournament.start_date+'T12:00:00').toLocaleDateString('ca-ES'): 'Data pendent'} · ${pitches} camps</div></div></div>${scheduled.length?Array.from({length:pitches},(_,i)=>`<div class="pitch-block"><h3>Camp ${i+1}</h3><div class="match-list">${scheduled.filter(m=>m.pitch_number===i+1).map(m=>`<div class="match"><div class="team">${esc(teamName(m.home_team_id))}</div><div class="score-view">${m.home_score??'–'} – ${m.away_score??'–'}</div><div class="team right">${esc(teamName(m.away_team_id))}</div><div class="match-meta"><span>${new Date(m.scheduled_at).toLocaleTimeString('ca-ES',{hour:'2-digit',minute:'2-digit'})} · ${m.phase==='eliminatoria'?esc(m.round_label||'Eliminatòria'):esc(m.group_name+' · Jornada '+m.round_number)}</span><span>${m.home_score!==null&&m.away_score!==null?'Finalitzat':'Programat'}</span></div></div>`).join('')||'<div class="muted">Cap partit assignat.</div>'}</div></div>`).join(''):`<div class="empty">Encara no s'ha generat cap horari.</div>`}${unscheduled.length?`<div class="notice">${unscheduled.length} partit(s) encara no tenen horari.</div>`:''}</div>`;
+  }
+  function renderKnockout(){
+    const ko=matches.filter(m=>m.phase==='eliminatoria').sort((a,b)=>a.round_number-b.round_number||a.match_number-b.match_number);
+    const groupsDone=matches.filter(m=>m.phase!=='eliminatoria').length>0&&matches.filter(m=>m.phase!=='eliminatoria').every(m=>m.home_score!==null&&m.away_score!==null);
+    return `<div class="panel"><div class="panel-head"><div><h3>Fase eliminatòria</h3><div class="muted">Els equips classificats avancen quan es tanquen els resultats de cada ronda.</div></div></div>${!groupsDone?'<div class="notice">La fase eliminatòria es podrà generar quan tots els partits de grups tinguin resultat.</div>':''}${!ko.length?'<div class="empty">Encara no s’ha generat el quadre eliminatori.</div>':Array.from(new Set(ko.map(m=>m.round_number))).map(r=>`<div class="pitch-block"><h3>${esc(ko.find(m=>m.round_number===r)?.round_label||'Ronda '+r)}</h3><div class="match-list">${ko.filter(m=>m.round_number===r).map(m=>matchHtml(m)).join('')}</div></div>`).join('')}</div>`;
   }
   function renderStats(){
     if(!teams.length)return `<div class="panel empty">Les estadístiques apareixeran quan hi hagi equips.</div>`;
     return `<div class="group-grid">${groupNames().map(g=>`<div class="panel"><h3>${esc(g)}</h3><table><thead><tr><th>Equip</th><th class="num">PJ</th><th class="num">V-E-D</th><th class="num">GF</th><th class="num">GC</th><th class="num">DG</th><th class="num">Pts</th></tr></thead><tbody>${standings(g).map(r=>`<tr><td class="teamname">${esc(r.name)}</td><td class="num">${r.pj}</td><td class="num">${r.g}-${r.e}-${r.p}</td><td class="num">${r.gf}</td><td class="num">${r.gc}</td><td class="num">${r.dg}</td><td class="num points">${r.pts}</td></tr>`).join('')}</tbody></table></div>`).join('')}</div>`;
   }
   function renderManage(){
-    return `<div class="panel"><div class="panel-head"><div><h3>Configuració del torneig</h3><div class="muted">Nom, equips i distribució en grups.</div></div></div><label class="field-label">Nom del torneig</label><div class="toolbar"><input class="field" id="tournamentName" style="flex:1" value="${esc(tournament?.name||'Torneig de futbol')}"><button class="btn primary" id="saveTournament">Desar nom</button></div></div>
-    <div class="panel"><h3>Crear o substituir la fase de grups</h3><p class="muted">Aquesta acció elimina els equips, partits i resultats actuals. Distribueix els equips de manera equilibrada entre els grups.</p><label class="field-label">Equips (un per línia)</label><textarea class="field full" id="teamNames" rows="8" placeholder="Equip 1&#10;Equip 2&#10;Equip 3">${teams.map(t=>t.name).join('\n')}</textarea><div style="height:12px"></div><div class="toolbar"><div><label class="field-label">Nombre de grups</label><select class="field" id="groupCount">${[1,2,3,4,5,6,7,8].map(n=>`<option value="${n}" ${groupNames().length===n?'selected':''}>${n}</option>`).join('')}</select></div><button class="btn primary" id="generate">Generar equips i calendari</button></div><div id="manageMessage"></div></div>`;
+    const t=tournament||{};
+    return `<div class="panel"><h3>Configuració general</h3><p class="muted">Paràmetres que s'utilitzaran per generar els horaris. Els canvis no alteren els resultats existents.</p><div class="settings-grid">
+      <div><label class="field-label">Nom del torneig</label><input class="field full" id="tournamentName" value="${esc(t.name||'Torneig de futbol')}"></div>
+      <div><label class="field-label">Data</label><input class="field full" id="startDate" type="date" value="${esc(t.start_date||'')}"></div>
+      <div><label class="field-label">Hora d'inici</label><input class="field full" id="startTime" type="time" value="${esc(t.start_time||'15:00')}"></div>
+      <div><label class="field-label">Hora límit</label><input class="field full" id="endTime" type="time" value="${esc(t.end_time||'21:00')}"></div>
+      <div><label class="field-label">Durada del partit (min)</label><input class="field full" id="matchDuration" type="number" min="1" max="180" value="${Number(t.match_duration_minutes||15)}"></div>
+      <div><label class="field-label">Temps entre partits (min)</label><input class="field full" id="breakMinutes" type="number" min="0" max="60" value="${Number(t.break_minutes??5)}"></div>
+      <div><label class="field-label">Nombre de camps</label><input class="field full" id="pitchCount" type="number" min="1" max="20" value="${Number(t.pitch_count||3)}"></div>
+      <div><label class="field-label">Descans mínim per equip (min)</label><input class="field full" id="teamRest" type="number" min="0" max="240" value="${Number(t.team_rest_minutes??10)}"></div>
+      <div><label class="field-label">Classificats per grup</label><input class="field full" id="qualifiers" type="number" min="1" max="8" value="${Number(t.qualifiers_per_group||2)}"></div>
+    </div><div class="toolbar" style="margin-top:14px"><button class="btn primary" id="saveSettings">Desar configuració</button><button class="btn" id="makeSchedule">Generar horaris</button><button class="btn" id="makeKnockout">Generar eliminatòria</button></div><div id="settingsMessage"></div></div>
+    <div class="panel"><h3>Crear o substituir la fase de grups</h3><p class="muted">Aquesta acció elimina els equips, partits i resultats actuals. Distribueix els equips de manera equilibrada entre els grups.</p><label class="field-label">Equips (un per línia)</label><textarea class="field full" id="teamNames" rows="8" placeholder="Equip 1&#10;Equip 2&#10;Equip 3">${teams.map(t=>t.name).join('\n')}</textarea><div style="height:12px"></div><div class="toolbar"><div><label class="field-label">Nombre de grups</label><select class="field" id="groupCount">${[1,2,3,4,5,6,7,8].map(n=>`<option value="${n}" ${groupNames().length===n?'selected':''}>${n}</option>`).join('')}</select></div><button class="btn primary" id="generate">Generar equips i partits</button></div><div id="manageMessage"></div></div>`;
   }
   function render(){
     document.body.classList.toggle('is-admin',isAdmin);
@@ -124,8 +152,8 @@
     $('accessStatus').textContent=isAdmin?'Sessió d’administració':'Consulta pública';
     document.querySelectorAll('.admin-only').forEach(el=>el.style.display=isAdmin?'inline-flex':'none');
     document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===currentTab));
-    $('content').innerHTML=currentTab==='table'?renderTable():currentTab==='matches'?renderMatches():currentTab==='stats'?renderStats():renderManage();
-    if(currentTab==='matches')wireMatchControls();
+    $('content').innerHTML=currentTab==='table'?renderTable():currentTab==='matches'?renderMatches():currentTab==='stats'?renderStats():currentTab==='calendar'?renderCalendar():currentTab==='knockout'?renderKnockout():renderManage();
+    if(currentTab==='matches'||currentTab==='knockout')wireMatchControls();
     if(currentTab==='manage')wireManageControls();
   }
   function wireMatchControls(){
@@ -136,10 +164,60 @@
       const other=matches.find(m=>m.id===id);
       const payload={home_score:side==='home'?value:other.home_score,away_score:side==='away'?value:other.away_score};
       const {error}=await supabase.from('matches').update(payload).eq('id',id);
-      if(error)alert(error.message);else await loadData();
+      if(error)alert(error.message);else { await loadData(); await advanceKnockout(); await loadData(); }
     }));
   }
+  function roundLabel(total){return total===2?'Final':total===4?'Semifinals':total===8?'Quarts de final':total===16?'Vuitens de final':'Ronda eliminatòria';}
+  async function advanceKnockout(){
+    const ko=matches.filter(m=>m.phase==='eliminatoria');if(!ko.length)return;
+    const latest=Math.max(...ko.map(m=>m.round_number));const round=ko.filter(m=>m.round_number===latest);
+    if(!round.length||round.some(m=>m.home_score===null||m.away_score===null))return;
+    const nextExists=ko.some(m=>m.round_number===latest+1);if(nextExists)return;
+    const winners=round.map(m=>m.home_score>m.away_score?m.home_team_id:m.away_score>m.home_score?m.away_team_id:null);
+    if(winners.some(x=>!x)){alert('Aquest partit ha acabat empatat. Cal resoldre’l amb un criteri de desempat abans de continuar.');return;}
+    if(winners.length===1)return;
+    const next=[];for(let i=0;i<winners.length;i+=2)next.push({group_name:'Eliminatòria',phase:'eliminatoria',round_number:latest+1,match_number:next.length+1,bracket_position:next.length+1,round_label:roundLabel(winners.length),home_team_id:winners[i],away_team_id:winners[i+1]});
+    if(next.some(m=>!m.away_team_id))return;
+    const {error}=await supabase.from('matches').insert(next);if(error)alert('No s’ha pogut crear la ronda següent: '+error.message);else {await loadData();await generateSchedule(true);await loadData();}
+  }
+  async function saveSettings(){
+    const box=$('settingsMessage');const payload={name:$('tournamentName').value.trim(),start_date:$('startDate').value||null,start_time:$('startTime').value||null,end_time:$('endTime').value||null,match_duration_minutes:Number($('matchDuration').value),break_minutes:Number($('breakMinutes').value),pitch_count:Number($('pitchCount').value),team_rest_minutes:Number($('teamRest').value),qualifiers_per_group:Number($('qualifiers').value)};
+    if(!payload.name||!payload.start_date||!payload.start_time||!payload.end_time){box.innerHTML=msg('Cal indicar el nom, la data i les hores d’inici i finalització.',true);return;}
+    if(Object.entries({match_duration_minutes:[1,180],break_minutes:[0,60],pitch_count:[1,20],team_rest_minutes:[0,240],qualifiers_per_group:[1,8]}).some(([k,r])=>!Number.isInteger(payload[k])||payload[k]<r[0]||payload[k]>r[1])){box.innerHTML=msg('Revisa els valors numèrics de la configuració.',true);return;}
+    const result=tournament?await supabase.from('tournaments').update(payload).eq('id',tournament.id):await supabase.from('tournaments').insert(payload);
+    if(result.error){box.innerHTML=msg(result.error.message,true);return;}await loadData();$('settingsMessage').innerHTML=msg('Configuració desada.');
+  }
+  async function generateSchedule(silent=false){
+    const box=$('settingsMessage');const report=(text,error=false)=>{if(box)box.innerHTML=msg(text,error);else if(!silent)alert(text);};
+    if(!tournament?.id){report('Primer desa la configuració del torneig.',true);return;}
+    if(!tournament.start_date||!tournament.start_time||!tournament.end_time){report('Cal indicar data, hora d’inici i hora límit.',true);return;}
+    const duration=Number(tournament.match_duration_minutes||15),gap=Number(tournament.break_minutes??5),rest=Number(tournament.team_rest_minutes??10),pitches=Number(tournament.pitch_count||3);
+    const start=new Date(`${tournament.start_date}T${tournament.start_time}:00`),end=new Date(`${tournament.start_date}T${tournament.end_time}:00`);if(end<=start){report('L’hora límit ha de ser posterior a la d’inici.',true);return;}
+    const games=[...matches].sort((a,b)=>(a.phase==='eliminatoria'?1:0)-(b.phase==='eliminatoria'?1:0)||a.round_number-b.round_number||a.match_number-b.match_number);
+    const pitchFree=Array(pitches).fill(start.getTime()),teamFree={};const updates=[];const step=(duration+gap)*60000;
+    for(const m of games){let chosen=-1,at=Infinity;for(let p=0;p<pitches;p++){const candidate=Math.max(start.getTime(),pitchFree[p],teamFree[m.home_team_id]||0,teamFree[m.away_team_id]||0);if(candidate<at){at=candidate;chosen=p;}}
+      if(at+duration*60000>end.getTime()){report('No hi caben tots els partits dins la franja horària configurada. Allarga l’horari, redueix la durada/descans o augmenta els camps.',true);return;}
+      updates.push({id:m.id,scheduled_at:new Date(at).toISOString(),pitch_number:chosen+1});pitchFree[chosen]=at+step;teamFree[m.home_team_id]=at+(duration+rest)*60000;teamFree[m.away_team_id]=at+(duration+rest)*60000;
+    }
+    if(box)box.innerHTML=msg('Desant els horaris…');for(const u of updates){const {id,...data}=u;const {error}=await supabase.from('matches').update(data).eq('id',id);if(error){report(error.message,true);return;}}
+    await supabase.from('tournaments').update({schedule_generated_at:new Date().toISOString()}).eq('id',tournament.id);await loadData();if(!silent){currentTab='calendar';render();}
+  }
+  async function generateKnockout(){
+    const box=$('settingsMessage');const groupGames=matches.filter(m=>m.phase!=='eliminatoria');if(!groupGames.length){box.innerHTML=msg('Primer cal crear la fase de grups.',true);return;}
+    if(groupGames.some(m=>m.home_score===null||m.away_score===null)){box.innerHTML=msg('Cal introduir tots els resultats de la fase de grups abans de classificar equips.',true);return;}
+    if(matches.some(m=>m.phase==='eliminatoria')){box.innerHTML=msg('Ja existeix una fase eliminatòria. Per evitar duplicats, no la regenerarem automàticament.',true);return;}
+    const q=Number(tournament?.qualifiers_per_group||2),groups=groupNames();const qualified=groups.map(g=>standings(g).slice(0,q));
+    if(qualified.some(a=>a.length<q)){box.innerHTML=msg('Algun grup no té prou equips per cobrir el nombre de classificats configurat.',true);return;}
+    const total=q*groups.length;if(total<2||(total&(total-1))!==0){box.innerHTML=msg(`Amb ${groups.length} grup(s) i ${q} classificat(s) per grup hi ha ${total} equips. Per aquesta primera versió, el total de classificats ha de ser 2, 4, 8 o 16.`,true);return;}
+    let fixtures=[];
+    if(q===2&&groups.length>=2&&groups.length%2===0){for(let i=0;i<groups.length/2;i++){const a=qualified[i],b=qualified[groups.length-1-i];fixtures.push({group_name:'Eliminatòria',phase:'eliminatoria',round_number:1,match_number:fixtures.length+1,bracket_position:fixtures.length+1,round_label:roundLabel(total),home_team_id:a[0].id,away_team_id:b[1].id});fixtures.push({group_name:'Eliminatòria',phase:'eliminatoria',round_number:1,match_number:fixtures.length+1,bracket_position:fixtures.length+1,round_label:roundLabel(total),home_team_id:b[0].id,away_team_id:a[1].id});}}
+    else {const pool=qualified.flat().map(x=>x.id);for(let i=0;i<pool.length/2;i++)fixtures.push({group_name:'Eliminatòria',phase:'eliminatoria',round_number:1,match_number:i+1,bracket_position:i+1,round_label:roundLabel(total),home_team_id:pool[i],away_team_id:pool[pool.length-1-i]});}
+    const {error}=await supabase.from('matches').insert(fixtures);if(error){box.innerHTML=msg(error.message,true);return;}await loadData();await generateSchedule(true);await loadData();currentTab='knockout';render();
+  }
   function wireManageControls(){
+    $('saveSettings')?.addEventListener('click',saveSettings);
+    $('makeSchedule')?.addEventListener('click',generateSchedule);
+    $('makeKnockout')?.addEventListener('click',generateKnockout);
     $('saveTournament')?.addEventListener('click',async()=>{
       const name=$('tournamentName').value.trim();if(!name)return;
       let result;
@@ -180,8 +258,8 @@
     });
   }
   document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{currentTab=b.dataset.tab;render()}));
-  $('loginBtn').addEventListener('click',()=>{$('loginPanel').classList.remove('hidden');document.querySelector('main').classList.add('hidden')});
   $('editNameBtn').addEventListener('click',()=>{currentTab='manage';render()});
+  $('loginBtn').addEventListener('click',()=>{$('loginPanel').classList.remove('hidden');document.querySelector('main').classList.add('hidden')});
   $('cancelLogin').addEventListener('click',()=>{$('loginPanel').classList.add('hidden');document.querySelector('main').classList.remove('hidden')});
   $('logoutBtn').addEventListener('click',async()=>{await supabase.auth.signOut();});
   $('loginForm').addEventListener('submit',async e=>{e.preventDefault();if(!supabase)return;const {error}=await supabase.auth.signInWithPassword({email:$('email').value,password:$('password').value});$('loginMessage').classList.remove('hidden');$('loginMessage').textContent=error?error.message:'Sessió iniciada.'});

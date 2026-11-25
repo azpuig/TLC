@@ -216,7 +216,7 @@
   }
   function wireManageControls(){
     $('saveSettings')?.addEventListener('click',saveSettings);
-    $('makeSchedule')?.addEventListener('click',generateSchedule);
+    $('makeSchedule')?.addEventListener('click',()=>generateSchedule(false));
     $('makeKnockout')?.addEventListener('click',generateKnockout);
     $('saveTournament')?.addEventListener('click',async()=>{
       const name=$('tournamentName').value.trim();if(!name)return;

@@ -113,14 +113,14 @@
     const label=m.phase==='eliminatoria'?(m.round_label||'Fase eliminatòria'):`${esc(m.group_name)} · Jornada ${m.round_number}`;
     const when=m.scheduled_at?new Date(m.scheduled_at).toLocaleString('ca-ES',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'Horari pendent';
     const pitch=m.pitch_number?`Camp ${m.pitch_number}`:'Camp pendent';
-    return `<div class="match" data-group="${esc(m.group_name)}"><div class="team">${esc(teamName(m.home_team_id))}</div><div class="score">${isAdmin?`<input type="number" min="0" step="1" aria-label="Gols ${esc(teamName(m.home_team_id))}" data-score="${m.id}" data-side="home" value="${m.home_score??''}" placeholder="–"><b>–</b><input type="number" min="0" step="1" aria-label="Gols ${esc(teamName(m.away_team_id))}" data-score="${m.id}" data-side="away" value="${m.away_score??''}" placeholder="–">`:`<div class="score-view">${done?m.home_score+' – '+m.away_score:'– : –'}</div>`}</div><div class="team right">${esc(teamName(m.away_team_id))}</div><div class="match-meta"><span>${label} · ${when} · ${pitch}</span><span>${done?'Resultat introduït':'Pendent'}</span></div></div>`;
+    return `<div class="match" data-group="${esc(m.group_name)}"><div class="team">${esc(teamName(m.home_team_id))}</div><div class="score">${isAdmin?`<input type="number" min="0" step="1" aria-label="Gols ${esc(teamName(m.home_team_id))}" data-score="${m.id}" data-side="home" value="${m.home_score??''}" placeholder="–"><b>–</b><input type="number" min="0" step="1" aria-label="Gols ${esc(teamName(m.away_team_id))}" data-score="${m.id}" data-side="away" value="${m.away_score??''}" placeholder="–">`:`<div class="score-view">${done?m.home_score+' – '+m.away_score:'– : –'}</div>`}</div><div class="team right">${esc(teamName(m.away_team_id))}</div><div class="match-meta"><span>${label} · ${when} · ${pitch}</span><span>${done?'Resultat introduït':'Pendent'}</span></div>${isAdmin?`<div class="match-meta" style="align-items:center;gap:8px;flex-wrap:wrap"><label>Hora <input class="field" type="datetime-local" data-schedule-time="${m.id}" value="${m.scheduled_at?new Date(new Date(m.scheduled_at).getTime()-new Date(m.scheduled_at).getTimezoneOffset()*60000).toISOString().slice(0,16):''}"></label><label>Camp <select class="field" data-schedule-pitch="${m.id}"><option value="">Sense assignar</option>${Array.from({length:Number(tournament?.pitch_count||3)},(_,i)=>`<option value="${i+1}" ${Number(m.pitch_number)===i+1?'selected':''}>Camp ${i+1}</option>`).join('')}</select></label><button class="btn" data-save-schedule="${m.id}">Desar horari</button></div>`:''}</div>`;
   }
   function renderCalendar(){
     if(!matches.length)return `<div class="panel empty">Encara no hi ha partits per programar.</div>`;
     const scheduled=matches.filter(m=>m.scheduled_at).sort((a,b)=>new Date(a.scheduled_at)-new Date(b.scheduled_at)||a.pitch_number-b.pitch_number);
     const unscheduled=matches.filter(m=>!m.scheduled_at);
     const pitches=Number(tournament?.pitch_count||3);
-    return `<div class="panel"><div class="panel-head"><div><h3>Horaris dels camps</h3><div class="muted">${tournament?.start_date?new Date(tournament.start_date+'T12:00:00').toLocaleDateString('ca-ES'): 'Data pendent'} · ${pitches} camps</div></div></div>${scheduled.length?Array.from({length:pitches},(_,i)=>`<div class="pitch-block"><h3>Camp ${i+1}</h3><div class="match-list">${scheduled.filter(m=>m.pitch_number===i+1).map(m=>`<div class="match"><div class="team">${esc(teamName(m.home_team_id))}</div><div class="score-view">${m.home_score??'–'} – ${m.away_score??'–'}</div><div class="team right">${esc(teamName(m.away_team_id))}</div><div class="match-meta"><span>${new Date(m.scheduled_at).toLocaleTimeString('ca-ES',{hour:'2-digit',minute:'2-digit'})} · ${m.phase==='eliminatoria'?esc(m.round_label||'Eliminatòria'):esc(m.group_name+' · Jornada '+m.round_number)}</span><span>${m.home_score!==null&&m.away_score!==null?'Finalitzat':'Programat'}</span></div></div>`).join('')||'<div class="muted">Cap partit assignat.</div>'}</div></div>`).join(''):`<div class="empty">Encara no s'ha generat cap horari.</div>`}${unscheduled.length?`<div class="notice">${unscheduled.length} partit(s) encara no tenen horari.</div>`:''}</div>`;
+    return `<div class="panel"><div class="panel-head"><div><h3>Horaris dels camps</h3><div class="muted">${tournament?.start_date?new Date(tournament.start_date+'T12:00:00').toLocaleDateString('ca-ES'): 'Data pendent'} · ${pitches} camps</div></div></div>${scheduled.length?Array.from({length:pitches},(_,i)=>`<div class="pitch-block"><h3>Camp ${i+1}</h3><div class="match-list">${scheduled.filter(m=>m.pitch_number===i+1).map(m=>matchHtml(m)).join('')||'<div class="muted">Cap partit assignat.</div>'}</div></div>`).join(''):`<div class="empty">Encara no s'ha generat cap horari.</div>`}${unscheduled.length?`<div class="notice">${unscheduled.length} partit(s) encara no tenen horari.</div>`:''}</div>`;
   }
   function renderKnockout(){
     const ko=matches.filter(m=>m.phase==='eliminatoria').sort((a,b)=>a.round_number-b.round_number||a.match_number-b.match_number);
@@ -143,7 +143,7 @@
       <div><label class="field-label">Nombre de camps</label><input class="field full" id="pitchCount" type="number" min="1" max="20" value="${Number(t.pitch_count||3)}"></div>
       <div><label class="field-label">Descans mínim per equip (min)</label><input class="field full" id="teamRest" type="number" min="0" max="240" value="${Number(t.team_rest_minutes??10)}"></div>
       <div><label class="field-label">Classificats per grup</label><input class="field full" id="qualifiers" type="number" min="1" max="8" value="${Number(t.qualifiers_per_group||2)}"></div>
-    </div><div class="toolbar" style="margin-top:14px"><button class="btn primary" id="saveSettings">Desar configuració</button><button class="btn" id="makeSchedule">Generar horaris</button><button class="btn" id="makeKnockout">Generar eliminatòria</button></div><div id="settingsMessage"></div></div>
+    </div><div class="toolbar" style="margin-top:14px"><button class="btn primary" id="saveSettings">Desar configuració</button><button class="btn" id="makeGroupSchedule">Generar horaris de grups</button><button class="btn" id="makeKnockout">Generar eliminatòria</button><button class="btn" id="makeKnockoutSchedule">Programar eliminatòria</button></div><div id="settingsMessage"></div></div>
     <div class="panel"><h3>Crear o substituir la fase de grups</h3><p class="muted">Aquesta acció elimina els equips, partits i resultats actuals. Distribueix els equips de manera equilibrada entre els grups.</p><label class="field-label">Equips (un per línia)</label><textarea class="field full" id="teamNames" rows="8" placeholder="Equip 1&#10;Equip 2&#10;Equip 3">${teams.map(t=>t.name).join('\n')}</textarea><div style="height:12px"></div><div class="toolbar"><div><label class="field-label">Nombre de grups</label><select class="field" id="groupCount">${[1,2,3,4,5,6,7,8].map(n=>`<option value="${n}" ${groupNames().length===n?'selected':''}>${n}</option>`).join('')}</select></div><button class="btn primary" id="generate">Generar equips i partits</button></div><div id="manageMessage"></div></div>`;
   }
   function render(){
@@ -154,6 +154,7 @@
     document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===currentTab));
     $('content').innerHTML=currentTab==='table'?renderTable():currentTab==='matches'?renderMatches():currentTab==='stats'?renderStats():currentTab==='calendar'?renderCalendar():currentTab==='knockout'?renderKnockout():renderManage();
     if(currentTab==='matches'||currentTab==='knockout')wireMatchControls();
+    if(currentTab==='matches'||currentTab==='knockout'||currentTab==='calendar')wireScheduleControls();
     if(currentTab==='manage')wireManageControls();
   }
   function wireMatchControls(){
@@ -167,6 +168,23 @@
       if(error)alert(error.message);else { await loadData(); await advanceKnockout(); await loadData(); }
     }));
   }
+
+
+  function wireScheduleControls(){
+    document.querySelectorAll('[data-save-schedule]').forEach(button=>button.addEventListener('click',async()=>{
+      const id=button.dataset.saveSchedule;
+      const timeInput=document.querySelector(`[data-schedule-time="${id}"]`);
+      const pitchInput=document.querySelector(`[data-schedule-pitch="${id}"]`);
+      const local=timeInput?.value||'';
+      if(local&&!/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$/.test(local)){alert('Revisa la data i l’hora.');return;}
+      const scheduled_at=local?new Date(local).toISOString():null;
+      const pitch_number=pitchInput?.value?Number(pitchInput.value):null;
+      const {error}=await supabase.from('matches').update({scheduled_at,pitch_number}).eq('id',id);
+      if(error){alert('No s’ha pogut desar l’horari: '+error.message);return;}
+      await loadData();
+    }));
+  }
+
   function roundLabel(total){return total===2?'Final':total===4?'Semifinals':total===8?'Quarts de final':total===16?'Vuitens de final':'Ronda eliminatòria';}
   async function advanceKnockout(){
     const ko=matches.filter(m=>m.phase==='eliminatoria');if(!ko.length)return;
@@ -178,7 +196,7 @@
     if(winners.length===1)return;
     const next=[];for(let i=0;i<winners.length;i+=2)next.push({group_name:'Eliminatòria',phase:'eliminatoria',round_number:latest+1,match_number:next.length+1,bracket_position:next.length+1,round_label:roundLabel(winners.length),home_team_id:winners[i],away_team_id:winners[i+1]});
     if(next.some(m=>!m.away_team_id))return;
-    const {error}=await supabase.from('matches').insert(next);if(error)alert('No s’ha pogut crear la ronda següent: '+error.message);else {await loadData();await generateSchedule(true);await loadData();}
+    const {error}=await supabase.from('matches').insert(next);if(error)alert('No s’ha pogut crear la ronda següent: '+error.message);else {await loadData();}
   }
   async function saveSettings(){
     const box=$('settingsMessage');const payload={name:$('tournamentName').value.trim(),start_date:$('startDate').value||null,start_time:$('startTime').value||null,end_time:$('endTime').value||null,match_duration_minutes:Number($('matchDuration').value),break_minutes:Number($('breakMinutes').value),pitch_count:Number($('pitchCount').value),team_rest_minutes:Number($('teamRest').value),qualifiers_per_group:Number($('qualifiers').value)};
@@ -187,19 +205,20 @@
     const result=tournament?await supabase.from('tournaments').update(payload).eq('id',tournament.id):await supabase.from('tournaments').insert(payload);
     if(result.error){box.innerHTML=msg(result.error.message,true);return;}await loadData();$('settingsMessage').innerHTML=msg('Configuració desada.');
   }
-  async function generateSchedule(silent=false){
+  async function generateSchedule(phase='grups',silent=false){
     const box=$('settingsMessage');const report=(text,error=false)=>{if(box)box.innerHTML=msg(text,error);else if(!silent)alert(text);};
     if(!tournament?.id){report('Primer desa la configuració del torneig.',true);return;}
     if(!tournament.start_date||!tournament.start_time||!tournament.end_time){report('Cal indicar data, hora d’inici i hora límit.',true);return;}
     const duration=Number(tournament.match_duration_minutes||15),gap=Number(tournament.break_minutes??5),rest=Number(tournament.team_rest_minutes??10),pitches=Number(tournament.pitch_count||3);
     const start=new Date(`${tournament.start_date}T${tournament.start_time}:00`),end=new Date(`${tournament.start_date}T${tournament.end_time}:00`);if(end<=start){report('L’hora límit ha de ser posterior a la d’inici.',true);return;}
-    const games=[...matches].sort((a,b)=>(a.phase==='eliminatoria'?1:0)-(b.phase==='eliminatoria'?1:0)||a.round_number-b.round_number||a.match_number-b.match_number);
+    const games=[...matches].filter(m=>phase==='tots'||(phase==='eliminatoria'?m.phase==='eliminatoria':m.phase!=='eliminatoria')).sort((a,b)=>a.round_number-b.round_number||a.match_number-b.match_number); 
+    if(!games.length){report(phase==='eliminatoria'?'Encara no hi ha partits eliminatoris per programar.':'No hi ha partits de grups per programar.',true);return;}
     const pitchFree=Array(pitches).fill(start.getTime()),teamFree={};const updates=[];const step=(duration+gap)*60000;
     for(const m of games){let chosen=-1,at=Infinity;for(let p=0;p<pitches;p++){const candidate=Math.max(start.getTime(),pitchFree[p],teamFree[m.home_team_id]||0,teamFree[m.away_team_id]||0);if(candidate<at){at=candidate;chosen=p;}}
-      if(at+duration*60000>end.getTime()){report('No hi caben tots els partits dins la franja horària configurada. Allarga l’horari, redueix la durada/descans o augmenta els camps.',true);return;}
+      if(at+duration*60000>end.getTime()){report(`No hi caben tots els partits de ${phase==='eliminatoria'?'l’eliminatòria':'grups'} dins la franja horària. Allarga l’horari, redueix els descansos o augmenta els camps.`,true);return;}
       updates.push({id:m.id,scheduled_at:new Date(at).toISOString(),pitch_number:chosen+1});pitchFree[chosen]=at+step;teamFree[m.home_team_id]=at+(duration+rest)*60000;teamFree[m.away_team_id]=at+(duration+rest)*60000;
     }
-    if(box)box.innerHTML=msg('Desant els horaris…');for(const u of updates){const {id,...data}=u;const {error}=await supabase.from('matches').update(data).eq('id',id);if(error){report(error.message,true);return;}}
+    if(box)box.innerHTML=msg(`Desant els horaris de ${phase==='eliminatoria'?'l’eliminatòria':'grups'}…`);for(const u of updates){const {id,...data}=u;const {error}=await supabase.from('matches').update(data).eq('id',id);if(error){report(error.message,true);return;}}
     await supabase.from('tournaments').update({schedule_generated_at:new Date().toISOString()}).eq('id',tournament.id);await loadData();if(!silent){currentTab='calendar';render();}
   }
   async function generateKnockout(){
@@ -212,11 +231,12 @@
     let fixtures=[];
     if(q===2&&groups.length>=2&&groups.length%2===0){for(let i=0;i<groups.length/2;i++){const a=qualified[i],b=qualified[groups.length-1-i];fixtures.push({group_name:'Eliminatòria',phase:'eliminatoria',round_number:1,match_number:fixtures.length+1,bracket_position:fixtures.length+1,round_label:roundLabel(total),home_team_id:a[0].id,away_team_id:b[1].id});fixtures.push({group_name:'Eliminatòria',phase:'eliminatoria',round_number:1,match_number:fixtures.length+1,bracket_position:fixtures.length+1,round_label:roundLabel(total),home_team_id:b[0].id,away_team_id:a[1].id});}}
     else {const pool=qualified.flat().map(x=>x.id);for(let i=0;i<pool.length/2;i++)fixtures.push({group_name:'Eliminatòria',phase:'eliminatoria',round_number:1,match_number:i+1,bracket_position:i+1,round_label:roundLabel(total),home_team_id:pool[i],away_team_id:pool[pool.length-1-i]});}
-    const {error}=await supabase.from('matches').insert(fixtures);if(error){box.innerHTML=msg(error.message,true);return;}await loadData();await generateSchedule(true);await loadData();currentTab='knockout';render();
+    const {error}=await supabase.from('matches').insert(fixtures);if(error){box.innerHTML=msg(error.message,true);return;}await loadData();currentTab='knockout';render();
   }
   function wireManageControls(){
     $('saveSettings')?.addEventListener('click',saveSettings);
-    $('makeSchedule')?.addEventListener('click',()=>generateSchedule(false));
+    $('makeGroupSchedule')?.addEventListener('click',()=>generateSchedule('grups',false));
+    $('makeKnockoutSchedule')?.addEventListener('click',()=>generateSchedule('eliminatoria',false));
     $('makeKnockout')?.addEventListener('click',generateKnockout);
     $('saveTournament')?.addEventListener('click',async()=>{
       const name=$('tournamentName').value.trim();if(!name)return;
